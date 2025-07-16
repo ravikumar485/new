@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app import schemas, crud
 from app.database import SessionLocal
@@ -18,7 +18,9 @@ def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)
     return crud.create_product(db, product)
 
 @router.get("/", response_model=List[schemas.Product])
-def read_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_products(skip: int = 0, limit: int = 100, barcode: str = Query(None), db: Session = Depends(get_db)):
+    if barcode:
+        return db.query(crud.models.Product).filter(crud.models.Product.barcode == barcode).all()
     return crud.get_products(db, skip=skip, limit=limit)
 
 @router.get("/{product_id}", response_model=schemas.Product)

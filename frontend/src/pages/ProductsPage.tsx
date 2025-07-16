@@ -50,6 +50,8 @@ const ProductsPage: React.FC = () => {
   const [unitFactor, setUnitFactor] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<ProductCreate | null>(null);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
 
   const fetchProducts = () => {
     setLoading(true);
@@ -145,9 +147,44 @@ const ProductsPage: React.FC = () => {
     }
   };
 
+  const handleBarcodeLookup = async () => {
+    if (!barcodeInput.trim()) return;
+    try {
+      const res = await api.get<Product[]>(`/products?barcode=${encodeURIComponent(barcodeInput)}`);
+      if (res.data.length > 0) {
+        setBarcodeProduct(res.data[0]);
+      } else {
+        setBarcodeProduct(null);
+        setForm(f => ({ ...f, barcode: barcodeInput }));
+      }
+    } catch {
+      setBarcodeProduct(null);
+    }
+  };
+
   return (
     <div>
       <h2>Products</h2>
+      {/* Barcode scan/add section */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          placeholder="Scan or enter barcode"
+          value={barcodeInput}
+          onChange={e => setBarcodeInput(e.target.value)}
+          style={{ marginRight: 8 }}
+        />
+        <button type="button" onClick={handleBarcodeLookup}>Lookup/Add by Barcode</button>
+        {barcodeProduct && (
+          <div style={{ marginTop: 8, color: 'green' }}>
+            <strong>Product found:</strong> {barcodeProduct.name} (Barcode: {barcodeProduct.barcode})
+          </div>
+        )}
+        {!barcodeProduct && barcodeInput && (
+          <div style={{ marginTop: 8, color: 'blue' }}>
+            <strong>No product found.</strong> You can add a new product with this barcode.
+          </div>
+        )}
+      </div>
       <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
         <div>
           <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required />
