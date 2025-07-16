@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
 from app import models, database
+from sqlalchemy import func
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -81,3 +82,47 @@ def get_expired(db: Session = Depends(get_db)):
             "expiry": batch.expiry_date
         })
     return results
+
+@router.get("/top-products")
+def get_top_products(db: Session = Depends(get_db)):
+    # Top 5 products by total stock
+    products = db.query(models.Product).all()
+    product_stocks = []
+    for product in products:
+        total_stock = 0
+        for variant in product.variants:
+            for batch in variant.batches:
+                stock = db.query(models.StockEntry).filter(models.StockEntry.batch_id == batch.id).with_entities(models.StockEntry.quantity).all()
+                total_stock += sum([s[0] for s in stock])
+        product_stocks.append({"name": product.name, "stock": total_stock})
+    product_stocks.sort(key=lambda x: x["stock"], reverse=True)
+    return product_stocks[:5]
+
+@router.get("/stock-distribution")
+def get_stock_distribution(db: Session = Depends(get_db)):
+    # Pie chart: stock distribution for all products
+    products = db.query(models.Product).all()
+    distribution = []
+    for product in products:
+        total_stock = 0
+        for variant in product.variants:
+            for batch in variant.batches:
+                stock = db.query(models.StockEntry).filter(models.StockEntry.batch_id == batch.id).with_entities(models.StockEntry.quantity).all()
+                total_stock += sum([s[0] for s in stock])
+        distribution.append({"name": product.name, "stock": total_stock})
+    return distribution
+
+@router.get("/stock-over-time")
+def get_stock_over_time(db: Session = Depends(get_db)):
+    # Line chart: stock entries per day for the last 30 days
+    today = date.today()
+    days = [today - timedelta(days=i) for i in range(29, -1, -1)]
+    result = []
+    for d in days:
+        next_day = d + timedelta(days=1)
+        count = db.query(models.StockEntry).filter(
+            models.StockEntry.entry_date >= d,
+            models.StockEntry.entry_date < next_day
+        ).count()
+        result.append({"date": d.strftime("%Y-%m-%d"), "entries": count})
+    return result
