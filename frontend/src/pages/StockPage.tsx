@@ -54,6 +54,7 @@ const StockPage: React.FC = () => {
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [invoiceResult, setInvoiceResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
 
   const fetchStock = () => {
     setLoading(true);
@@ -103,6 +104,12 @@ const StockPage: React.FC = () => {
     formData.append('file', invoiceFile);
     const res = await api.post('/invoices/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     setInvoiceResult(res.data);
+  };
+
+  const handleConfirmInvoice = async () => {
+    if (!invoiceResult?.parsed) return;
+    const res = await api.post('/invoices/confirm', invoiceResult.parsed);
+    setConfirmMessage(res.data.message);
   };
 
   // Edit logic
@@ -155,6 +162,8 @@ const StockPage: React.FC = () => {
             <strong>Parsed Invoice Data:</strong>
             <pre>{JSON.stringify(invoiceResult.parsed, null, 2)}</pre>
             <div style={{ color: 'green' }}>{invoiceResult.message}</div>
+            <button type="button" onClick={handleConfirmInvoice}>Confirm & Save</button>
+            {confirmMessage && <div style={{ color: 'blue', marginTop: 8 }}>{confirmMessage}</div>}
           </div>
         )}
       </div>
