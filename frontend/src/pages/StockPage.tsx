@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api';
 
+type Supplier = {
+  id: number;
+  name: string;
+};
+
 type StockEntry = {
   id: number;
   batch_id: number;
@@ -8,6 +13,7 @@ type StockEntry = {
   quantity: number;
   purchase_price: number;
   entry_date?: string;
+  supplier_id?: number;
 };
 
 type StockEntryCreate = {
@@ -16,6 +22,7 @@ type StockEntryCreate = {
   quantity: number;
   purchase_price: number;
   entry_date?: string;
+  supplier_id?: number;
 };
 
 type Batch = {
@@ -42,6 +49,7 @@ const StockPage: React.FC = () => {
   const [units, setUnits] = useState<MeasuringUnit[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<StockEntryCreate | null>(null);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   const fetchStock = () => {
     setLoading(true);
@@ -57,11 +65,15 @@ const StockPage: React.FC = () => {
   const fetchUnits = () => {
     api.get<MeasuringUnit[]>('/units').then(res => setUnits(res.data));
   };
+  const fetchSuppliers = () => {
+    api.get<Supplier[]>('/suppliers').then(res => setSuppliers(res.data));
+  };
 
   useEffect(() => {
     fetchStock();
     fetchBatches();
     fetchUnits();
+    fetchSuppliers();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -71,7 +83,7 @@ const StockPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await api.post('/stock', { ...form, quantity: Number(form.quantity), purchase_price: Number(form.purchase_price) });
-    setForm({ batch_id: 0, measuring_unit_id: 0, quantity: 0, purchase_price: 0, entry_date: '' });
+    setForm({ batch_id: 0, measuring_unit_id: 0, quantity: 0, purchase_price: 0, entry_date: '', supplier_id: undefined });
     fetchStock();
   };
 
@@ -84,6 +96,7 @@ const StockPage: React.FC = () => {
       quantity: entry.quantity,
       purchase_price: entry.purchase_price,
       entry_date: entry.entry_date,
+      supplier_id: entry.supplier_id,
     });
   };
 
@@ -130,6 +143,12 @@ const StockPage: React.FC = () => {
           </select>
         </div>
         <div>
+          <select name="supplier_id" value={form.supplier_id || ''} onChange={handleChange} required>
+            <option value="">Select Supplier</option>
+            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+        <div>
           <input name="quantity" type="number" placeholder="Quantity" value={form.quantity} onChange={handleChange} required />
         </div>
         <div>
@@ -151,6 +170,7 @@ const StockPage: React.FC = () => {
               <th>Quantity</th>
               <th>Purchase Price</th>
               <th>Entry Date</th>
+              <th>Supplier</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -171,6 +191,12 @@ const StockPage: React.FC = () => {
                         {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                     </td>
+                    <td>
+                      <select name="supplier_id" value={editForm?.supplier_id || ''} onChange={handleEditChange} required>
+                        <option value="">Select Supplier</option>
+                        {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </td>
                     <td><input name="quantity" type="number" value={editForm?.quantity} onChange={handleEditChange} /></td>
                     <td><input name="purchase_price" type="number" value={editForm?.purchase_price} onChange={handleEditChange} /></td>
                     <td><input name="entry_date" type="date" value={editForm?.entry_date || ''} onChange={handleEditChange} /></td>
@@ -186,6 +212,7 @@ const StockPage: React.FC = () => {
                     <td>{entry.quantity}</td>
                     <td>{entry.purchase_price}</td>
                     <td>{entry.entry_date ? entry.entry_date.split('T')[0] : ''}</td>
+                    <td>{suppliers.find(s => s.id === entry.supplier_id)?.name || ''}</td>
                     <td>
                       <button onClick={() => startEdit(entry)}>Edit</button>
                       <button onClick={() => deleteEntry(entry.id)}>Delete</button>
