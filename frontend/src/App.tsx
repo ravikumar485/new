@@ -5,6 +5,7 @@ import StockPage from './pages/StockPage';
 import UnitsPage from './pages/UnitsPage';
 import BatchesPage from './pages/BatchesPage';
 import DashboardPage from './pages/DashboardPage';
+import SuppliersPage from './pages/SuppliersPage';
 
 const App: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const App: React.FC = () => {
           <li><Link to="/stock">Stock</Link></li>
           <li><Link to="/units">Measuring Units</Link></li>
           <li><Link to="/batches">Batches</Link></li>
+          <li><Link to="/suppliers">Suppliers</Link></li>
           <li><Link to="/">Dashboard</Link></li>
         </ul>
       </nav>
@@ -23,6 +25,7 @@ const App: React.FC = () => {
         <Route path="/stock" element={<StockPage />} />
         <Route path="/units" element={<UnitsPage />} />
         <Route path="/batches" element={<BatchesPage />} />
+        <Route path="/suppliers" element={<SuppliersPage />} />
         <Route path="/" element={<DashboardPage />} />
       </Routes>
     </Router>

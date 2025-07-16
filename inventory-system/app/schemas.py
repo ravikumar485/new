@@ -56,12 +56,29 @@ class Product(ProductBase):
     class Config:
         orm_mode = True
 
+class SupplierBase(BaseModel):
+    name: str
+    contact: Optional[str] = None
+    address: Optional[str] = None
+    gst: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+
+class SupplierCreate(SupplierBase):
+    pass
+
+class Supplier(SupplierBase):
+    id: int
+    class Config:
+        orm_mode = True
+
 class StockEntryBase(BaseModel):
     batch_id: int
     measuring_unit_id: int
     quantity: float
     purchase_price: float
     entry_date: Optional[datetime] = None
+    supplier_id: Optional[int] = None
 
 class StockEntryCreate(StockEntryBase):
     pass

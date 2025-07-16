@@ -40,6 +40,17 @@ class Batch(Base):
     variant = relationship("Variant", back_populates="batches")
     stock_entries = relationship("StockEntry", back_populates="batch")
 
+class Supplier(Base):
+    __tablename__ = "suppliers"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    contact = Column(String)
+    address = Column(String)
+    gst = Column(String)
+    email = Column(String)
+    phone = Column(String)
+    stock_entries = relationship("StockEntry", back_populates="supplier")
+
 class StockEntry(Base):
     __tablename__ = "stock_entries"
     id = Column(Integer, primary_key=True)
@@ -48,5 +59,7 @@ class StockEntry(Base):
     quantity = Column(Float, nullable=False)
     purchase_price = Column(Float, nullable=False)
     entry_date = Column(DateTime)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), nullable=True)
     batch = relationship("Batch", back_populates="stock_entries")
     measuring_unit = relationship("MeasuringUnit")
+    supplier = relationship("Supplier", back_populates="stock_entries")
