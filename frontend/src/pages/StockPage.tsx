@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api';
+import { useRef } from 'react';
 
 type Supplier = {
   id: number;
@@ -50,6 +51,9 @@ const StockPage: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<StockEntryCreate | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [invoiceResult, setInvoiceResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchStock = () => {
     setLoading(true);
@@ -85,6 +89,20 @@ const StockPage: React.FC = () => {
     await api.post('/stock', { ...form, quantity: Number(form.quantity), purchase_price: Number(form.purchase_price) });
     setForm({ batch_id: 0, measuring_unit_id: 0, quantity: 0, purchase_price: 0, entry_date: '', supplier_id: undefined });
     fetchStock();
+  };
+
+  const handleInvoiceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setInvoiceFile(e.target.files[0]);
+    }
+  };
+
+  const handleInvoiceUpload = async () => {
+    if (!invoiceFile) return;
+    const formData = new FormData();
+    formData.append('file', invoiceFile);
+    const res = await api.post('/invoices/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    setInvoiceResult(res.data);
   };
 
   // Edit logic
@@ -128,6 +146,18 @@ const StockPage: React.FC = () => {
 
   return (
     <div>
+      {/* Invoice upload section */}
+      <div style={{ marginBottom: 24 }}>
+        <input type="file" accept="application/pdf,image/*" ref={fileInputRef} onChange={handleInvoiceFileChange} style={{ display: 'inline' }} />
+        <button type="button" onClick={handleInvoiceUpload} disabled={!invoiceFile}>Upload Invoice</button>
+        {invoiceResult && (
+          <div style={{ marginTop: 12, background: '#f0f0f0', padding: 12 }}>
+            <strong>Parsed Invoice Data:</strong>
+            <pre>{JSON.stringify(invoiceResult.parsed, null, 2)}</pre>
+            <div style={{ color: 'green' }}>{invoiceResult.message}</div>
+          </div>
+        )}
+      </div>
       <h2>Stock Entries</h2>
       <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
         <div>
