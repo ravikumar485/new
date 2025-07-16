@@ -48,6 +48,8 @@ const ProductsPage: React.FC = () => {
   const [variantName, setVariantName] = useState('');
   const [unitName, setUnitName] = useState('');
   const [unitFactor, setUnitFactor] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<ProductCreate | null>(null);
 
   const fetchProducts = () => {
     setLoading(true);
@@ -101,6 +103,46 @@ const ProductsPage: React.FC = () => {
       units: [],
     });
     fetchProducts();
+  };
+
+  // Edit logic
+  const startEdit = (product: Product) => {
+    setEditingId(product.id);
+    setEditForm({
+      name: product.name,
+      description: product.description,
+      hsn: product.hsn,
+      barcode: product.barcode,
+      low_stock_threshold: product.low_stock_threshold,
+      variants: product.variants,
+      units: product.units,
+    });
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editForm) return;
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const saveEdit = async (id: number) => {
+    if (!editForm) return;
+    await api.put(`/products/${id}`, editForm);
+    setEditingId(null);
+    setEditForm(null);
+    fetchProducts();
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
+  };
+
+  // Delete logic
+  const deleteProduct = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      await api.delete(`/products/${id}`);
+      fetchProducts();
+    }
   };
 
   return (
@@ -157,17 +199,39 @@ const ProductsPage: React.FC = () => {
               <th>Barcode</th>
               <th>Variants</th>
               <th>Units</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {products.map(product => (
               <tr key={product.id}>
-                <td>{product.name}</td>
-                <td>{product.description}</td>
-                <td>{product.hsn}</td>
-                <td>{product.barcode}</td>
-                <td>{product.variants.map(v => v.name).join(', ')}</td>
-                <td>{product.units.map(u => `${u.name} (${u.conversion_factor})`).join(', ')}</td>
+                {editingId === product.id ? (
+                  <>
+                    <td><input name="name" value={editForm?.name || ''} onChange={handleEditChange} /></td>
+                    <td><input name="description" value={editForm?.description || ''} onChange={handleEditChange} /></td>
+                    <td><input name="hsn" value={editForm?.hsn || ''} onChange={handleEditChange} /></td>
+                    <td><input name="barcode" value={editForm?.barcode || ''} onChange={handleEditChange} /></td>
+                    <td>{product.variants.map(v => v.name).join(', ')}</td>
+                    <td>{product.units.map(u => `${u.name} (${u.conversion_factor})`).join(', ')}</td>
+                    <td>
+                      <button onClick={() => saveEdit(product.id)}>Save</button>
+                      <button onClick={cancelEdit}>Cancel</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{product.name}</td>
+                    <td>{product.description}</td>
+                    <td>{product.hsn}</td>
+                    <td>{product.barcode}</td>
+                    <td>{product.variants.map(v => v.name).join(', ')}</td>
+                    <td>{product.units.map(u => `${u.name} (${u.conversion_factor})`).join(', ')}</td>
+                    <td>
+                      <button onClick={() => startEdit(product)}>Edit</button>
+                      <button onClick={() => deleteProduct(product.id)}>Delete</button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
